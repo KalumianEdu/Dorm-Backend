@@ -1,0 +1,497 @@
+﻿using System.Data;
+using System.Data.Common;
+using DormAPI.Models;
+using Microsoft.Data.SqlClient;
+
+namespace DormAPI.Database
+{
+    public class clsExternalLayer
+    {
+        private readonly string _connectionString;
+        public clsExternalLayer(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
+        }
+
+        // Student Section/Operations
+        public List<Dictionary<String, dynamic>> GetAllStudents()
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_GetAllStudents", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    var listDict = new List<Dictionary<String, dynamic>>();
+                    try
+                    {
+                        connection.Open();
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int studentId = reader.GetInt32(reader.GetOrdinal("StudentID"));
+                                string studentNumber = reader.GetString(reader.GetOrdinal("StudentNumber"));
+                                var startedDate = reader.GetDateTime(reader.GetOrdinal("StartedDate"));
+                                var endDate = reader.GetDateTime(reader.GetOrdinal("EndDate"));
+                                int yearOfStudy = reader.GetInt32(reader.GetOrdinal("YearOfStudy"));
+                                int personId = reader.GetInt32(reader.GetOrdinal("PersonID"));
+                                int universityId = reader.GetInt32(reader.GetOrdinal("UniversityID"));
+                                int facultyId = reader.GetInt32(reader.GetOrdinal("FacultyID"));
+                                int departmentId = reader.GetInt32(reader.GetOrdinal("DepartmentID"));
+
+                                listDict.Add(new Dictionary<String, dynamic>()
+                                {
+                                    { "StudentID", studentId },
+                                    { "StudentNumber", studentNumber },
+                                    { "StartedDate", startedDate },
+                                    { "EndDate", endDate },
+                                    { "YearOfStudy", yearOfStudy },
+                                    { "PersonID", personId },
+                                    { "UniversityID", universityId },
+                                    { "FacultyID", facultyId },
+                                    { "DepartmentID", departmentId }
+                                });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return listDict;
+                }
+            }
+        }
+
+
+        // building Section/Operations
+        public bool AddBuilding(Building building)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+
+                using (var command = new SqlCommand("SP_CreateBuilding", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@BuildingName", building.buildingName);
+
+                    // Output parameter to get THE Building ID
+                    SqlParameter BuidlingIdParam = new SqlParameter("@Output", SqlDbType.Int);
+
+                    BuidlingIdParam.Direction = ParameterDirection.Output;
+                    command.Parameters.Add(BuidlingIdParam);
+
+                    
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        rowAffected = command.ExecuteNonQuery();
+                        // Read the output value
+                        building.buildingId = Convert.ToInt32(BuidlingIdParam.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+
+                   
+                    return rowAffected > 0;
+
+                }
+
+            }
+        }
+
+        public List<Dictionary<String, dynamic>> GetAllBuildings()
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+
+                using (var command = new SqlCommand("SP_GetAllBuildings", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+
+                    var dict = new Dictionary<String, dynamic>();
+                    var listDict = new List<Dictionary<String, dynamic>>();
+                    try
+                    {
+                        connection.Open();
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int buildingId = reader.GetInt32(reader.GetOrdinal("buildingId"));
+                                string buildingName = reader.GetString(reader.GetOrdinal("buildingName"));
+                                int floorCount = reader.GetInt32(reader.GetOrdinal("floor_count"));
+                                int roomCount = reader.GetInt32(reader.GetOrdinal("room_count"));
+                                listDict.Add(new Dictionary<String, dynamic>()
+                                {
+                                    { "BuildingId", buildingId },
+                                    { "BuildingName", buildingName },
+                                    { "floor_count" , floorCount },
+                                    { "room_count" , roomCount },
+                                }
+                                );
+
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+
+                    return listDict;
+
+                }
+
+            }
+        }
+
+        public bool UpdateBuilding(Building building)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_UpdateBuilding", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@BuildingID", building.buildingId);
+                    command.Parameters.AddWithValue("@BuildingName", building.buildingName);
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        rowAffected = command.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return rowAffected > 0;
+                }
+            }
+        }
+
+        public bool DeleteBuilding(int buildingId)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_DeleteBuilding", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@BuildingID", buildingId);
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        rowAffected = command.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return rowAffected > 0;
+                }
+            }
+        }
+
+        // Floor Section/Operations
+        public bool AddFloor(Floor floor)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_AddFloor", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@BuildingID", floor.buildingId);
+                    command.Parameters.AddWithValue("@FloorNumber", floor.floorNumber);
+
+                    // Output parameter to get THE Building ID
+                    SqlParameter floorIdParam = new SqlParameter("@Output", SqlDbType.Int);
+
+                    floorIdParam.Direction = ParameterDirection.Output;
+                    command.Parameters.Add(floorIdParam);
+
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        command.ExecuteNonQuery();
+
+                        if (floorIdParam.Value == DBNull.Value)
+                            return false;
+
+                        floor.floorId = Convert.ToInt32(floorIdParam.Value);
+
+                        return floor.floorId > 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                        return false;
+                    }
+                }
+            }
+        }
+        public List<Dictionary<String, dynamic>> GetAllFloors(int buildingId)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_GetAllFloors", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@BuildingID", buildingId);
+                    var listDict = new List<Dictionary<String, dynamic>>();
+                    try
+                    {
+                        connection.Open();
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int floorId = reader.GetInt32(reader.GetOrdinal("floorId"));
+                                buildingId = reader.GetInt32(reader.GetOrdinal("buildingId"));
+                                int floorNumber = reader.GetInt32(reader.GetOrdinal("floorNumber"));
+                                int roomCount = reader.GetInt32(reader.GetOrdinal("roomCount"));
+                                listDict.Add(new Dictionary<String, dynamic>()
+                                {
+                                    { "FloorID", floorId },
+                                    { "BuildingID", buildingId },
+                                    { "FloorNumber", floorNumber },
+                                    { "RoomCount", roomCount }
+                                }
+                                );
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return listDict;
+                }
+            }
+        }
+        public bool UpdateFloor(Floor floor)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_UpdateFloor", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@FloorID", floor.floorId);
+                    command.Parameters.AddWithValue("@FloorNumber", floor.floorNumber);
+                    command.Parameters.AddWithValue("@BuildingID", floor.buildingId);
+
+
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        rowAffected = command.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return rowAffected > 0;
+                }
+            }
+        }
+
+        public bool DeleteFloor(Floor floor)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_DeleteFloor", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@FloorID", floor.floorId);
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        rowAffected = command.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return rowAffected > 0;
+                }
+            }
+
+        }
+        
+        // Room Section/Operations
+        public bool AddRoom(Room room)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_AddRoom", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@RoomNumber", room.roomNumber);
+                    command.Parameters.AddWithValue("@FloorID", room.floorId);
+                    command.Parameters.AddWithValue("@Capacity", room.capacity);
+                    command.Parameters.AddWithValue("@RoomStatusID", room.roomStatusId);
+
+                    SqlParameter roomIdParam = new SqlParameter("@output", SqlDbType.Int);
+                    roomIdParam.Direction = ParameterDirection.Output;
+                    command.Parameters.Add(roomIdParam);
+                    
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        rowAffected = command.ExecuteNonQuery();
+                        room.roomId = Convert.ToInt32(roomIdParam.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return rowAffected > 0;
+                }
+            }
+        }
+
+        public List<Dictionary<String, dynamic>> GetAllRooms(int floorId)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_GetAllRooms", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@FloorID", floorId);
+                    var listDict = new List<Dictionary<String, dynamic>>();
+                    try
+                    {
+                        connection.Open();
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int roomId = reader.GetInt32(reader.GetOrdinal("roomId"));
+                                string roomNumber = reader.GetString(reader.GetOrdinal("roomNumber"));
+                                int capacity = reader.GetInt32(reader.GetOrdinal("capacity"));
+                                int availableBeds = reader.GetInt32(reader.GetOrdinal("availableBeds"));
+                                int roomStatusId = reader.GetInt32(reader.GetOrdinal("roomStatusId"));
+                                string roomStatus = reader.GetString(reader.GetOrdinal("roomStatus"));
+                                listDict.Add(new Dictionary<String, dynamic>()
+                                {
+                                    { "RoomID", roomId },
+                                    { "RoomNumber", roomNumber },
+                                    { "Capacity", capacity },
+                                    { "AvailableBeds", availableBeds },
+                                    { "RoomStatusID", roomStatusId },
+                                    { "RoomStatus", roomStatus }
+                                }
+                                );
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return listDict;
+                }
+            }
+        }
+
+        public bool UpdateRoom(Room room)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_UpdateRoom", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@RoomID", room.roomId);
+                    command.Parameters.AddWithValue("@RoomNumber", room.roomNumber);
+                    command.Parameters.AddWithValue("@FloorID", room.floorId);
+                    command.Parameters.AddWithValue("@Capacity", room.capacity);
+                    command.Parameters.AddWithValue("RoomStatusID", room.roomStatusId);
+
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        rowAffected = command.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return rowAffected > 0;
+                }
+            }
+        }
+
+        public bool DeleteRoom(Room room)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SP_DeleteRoom", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@RoomID", room.roomId);
+                    command.Parameters.AddWithValue("@FloorID", room.floorId);
+                    int rowAffected = 0;
+                    try
+                    {
+                        connection.Open();
+                        rowAffected = command.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return rowAffected > 0;
+                }
+            }
+        }
+
+        public List<Dictionary<String, dynamic>> GetRoomStatus()
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand("SELECT * FROM RoomStatus ", connection))
+                {
+                    command.CommandType = CommandType.Text;
+
+                    var listDict = new List<Dictionary<String, dynamic>>();
+                    try
+                    {
+                        connection.Open();
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int roomStatusId = reader.GetInt32(reader.GetOrdinal("roomStatusId"));
+                                string  roomStatus= reader.GetString(reader.GetOrdinal("roomStatus"));
+
+                                listDict.Add(new Dictionary<String, dynamic>()
+                                {
+                                    { "RoomStatusID", roomStatusId },
+                                    { "RoomStatus", roomStatus }
+
+                                });
+                                
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    return listDict;
+                }
+            }
+        }
+    }
+
+
+}

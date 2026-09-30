@@ -1,0 +1,380 @@
+﻿using System.Runtime.InteropServices;
+using DormAPI.Database;
+using DormAPI.DTOs;
+using DormAPI.Models;
+using Microsoft.AspNetCore.Mvc;
+
+
+
+
+namespace DormAPI.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class DormController : ControllerBase
+    {
+        private readonly clsExternalLayer _clsExternalLayerRepo;
+        public DormController(clsExternalLayer clsExternalLayerRepo)
+        {
+            _clsExternalLayerRepo = clsExternalLayerRepo;
+        }
+
+        // Student Section
+        [HttpGet("students")]
+        public void GetStudents()
+        {
+
+        }
+
+        [HttpPost("student/add")]
+        public void AddStudent()
+        {
+
+        }
+        [HttpPut("student/update")]
+        public void UpdateStudent()
+        {
+
+        }
+
+        [HttpDelete("student/delete")]
+        public void DeleteStudent()
+        {
+        }
+
+        
+
+        // Building Section 
+        [HttpGet("buildings")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public IActionResult GetBuildings()
+        {
+
+            var allBuildings = _clsExternalLayerRepo.GetAllBuildings();
+
+            if(allBuildings == null)
+            {
+                return NotFound("Data is empty");
+            }
+
+            return Ok(allBuildings);
+
+        }
+
+        [HttpPost("building/add")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        public ActionResult AddBuilding([FromBody] BuildingDTO building)
+        {
+            if(building == null || string.IsNullOrEmpty(building.buildingName))
+            {
+                // Handle invalid input
+                 // Bad Request
+                return BadRequest();
+            }
+
+            Building newBuilding = new Building
+            {
+                buildingName = building.buildingName
+            };
+
+            // Here you would typically add the newBuilding to your database
+            var isAddedSuccessfully = _clsExternalLayerRepo.AddBuilding(newBuilding); // Simulate database operation result
+
+            if(isAddedSuccessfully)
+            {
+               return CreatedAtAction(nameof(AddBuilding), new { id = newBuilding.buildingId == null ? 0 : newBuilding.buildingId }, newBuilding); // Created
+            }
+            else
+            {
+                return StatusCode(500); // Internal Server Error
+            }
+        }
+
+        [HttpPut("building/update")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        public IActionResult UpdateBuilding([FromBody] Building updatedBuilding)
+        {
+            if(updatedBuilding == null) { 
+                return BadRequest();
+            }
+
+            bool isBuildingUpdated = _clsExternalLayerRepo.UpdateBuilding(updatedBuilding);
+
+            if (isBuildingUpdated)
+            {
+                return CreatedAtAction(nameof(UpdateBuilding), new {id = updatedBuilding.buildingId == null ? 0 : updatedBuilding.buildingId }, updatedBuilding);
+            }else
+            {
+                return NoContent ();
+            }
+
+            
+
+        }
+
+        [HttpDelete("building/delete/{buildingId}")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public IActionResult DeleteBuilding(int buildingId)
+        {
+            if(buildingId <= 0)
+            {
+                return BadRequest("Building Id is not correct.");
+            }
+
+            bool isBuildingDeleted = _clsExternalLayerRepo.DeleteBuilding(buildingId);
+
+            if (isBuildingDeleted)
+            {
+                return Ok("Building is deleted successfully.");
+            } else
+            {
+                return StatusCode(500);
+            }
+
+            
+        }
+
+        // Floor Section
+        [HttpGet("floors/{buildingId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public ActionResult GetFloors(int buildingId)
+        {
+            var data = _clsExternalLayerRepo.GetAllFloors(buildingId);
+
+            if(data == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(data);
+
+        }
+
+
+        [HttpPost("floor/add")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        
+        public IActionResult AddFloor([FromBody] FloorDTO floorDto)
+        {
+            if(floorDto == null || floorDto.floorNumber <= 0 || floorDto.buildingId <= 0)
+            {
+                return BadRequest("Invalid floor data.");
+            }
+
+            Floor newFloor = new Floor
+            {
+                floorNumber = floorDto.floorNumber,
+                buildingId = floorDto.buildingId
+
+            };
+
+            bool isFloorAdded = _clsExternalLayerRepo.AddFloor(newFloor);
+            if (isFloorAdded)
+
+            {
+                return CreatedAtAction(nameof(AddFloor), new { id = newFloor.floorId == null ? 0 : newFloor.floorId }, newFloor);
+            }
+            else
+            {
+                return Conflict();
+            }
+        }
+
+       
+
+        [HttpPut("floor/update")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        public ActionResult UpdateFloor([FromBody] DormAPI.DTOs.UpdateFloorDTO floorDto)
+        {
+            if (floorDto == null || floorDto.floorId <= 0 || floorDto.floorNumber <= 0 || floorDto.buildingId <= 0)
+            {
+                return BadRequest("Invalid floor data.");
+            }
+
+            var floorToUpdate = new Floor
+            {
+                floorId = floorDto.floorId,
+                floorNumber = floorDto.floorNumber,
+                buildingId = floorDto.buildingId
+            };
+
+            bool isFloorUpdated = _clsExternalLayerRepo.UpdateFloor(floorToUpdate);
+
+            if (isFloorUpdated)
+            {
+                return Ok("Floor updated successfully.");
+            }
+            else
+            {
+                return StatusCode(500, "An error occurred while updating the floor.");
+            }
+        }
+
+        [HttpDelete("floor/delete")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public IActionResult DeleteFloor([FromBody] DormAPI.DTOs.DeleteFloorDTO floorDto)
+        {
+            if (floorDto == null || floorDto.floorId <= 0 || floorDto.buildingId <= 0)
+            {
+                return BadRequest("Invalid floor identifier.");
+            }
+
+            var floorToDelete = new Floor
+            {
+                floorId = floorDto.floorId
+            };
+
+            bool isFloorDeleted = _clsExternalLayerRepo.DeleteFloor(floorToDelete);
+
+            if (isFloorDeleted)
+            {
+                return Ok("Floor deleted successfully.");
+            }
+            else
+            {
+                return Conflict();
+            }
+        }
+
+        // Room Section
+        
+        [HttpGet("rooms/status/list")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public ActionResult GetRoomStatusList()
+        {
+            
+
+            var data = _clsExternalLayerRepo.GetRoomStatus();
+
+            if (data == null || data.Count == 0) return NotFound();
+
+            return Ok(data);
+        }
+
+        [HttpGet("rooms/{floorId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public ActionResult GetRooms(int floorId)
+        {
+            if (floorId <= 0) return BadRequest("Invalid floor id.");
+
+            var data = _clsExternalLayerRepo.GetAllRooms(floorId);
+
+            if (data == null || data.Count == 0) return NotFound();
+
+            return Ok(data);
+        }
+
+        [HttpPost("room/add")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public IActionResult AddRoom([FromBody] DormAPI.DTOs.RoomAddDTO roomDto)
+        {
+            if (roomDto == null || roomDto.roomNumber == string.Empty || roomDto.floorId <= 0 || roomDto.capacity <= 0 )
+            {
+                return BadRequest("Invalid room data.");
+            }
+
+            var newRoom = new Room
+            {
+                roomNumber = roomDto.roomNumber,
+                floorId = roomDto.floorId,
+                capacity = roomDto.capacity,
+                roomStatusId = roomDto.roomStatusId
+            };
+
+           
+
+            bool isAdded = _clsExternalLayerRepo.AddRoom(newRoom);
+            if (isAdded)
+            {
+                return CreatedAtAction(nameof(AddRoom), new { id = newRoom.roomId }, newRoom);
+            }
+            return StatusCode(500, "An error occurred while adding the room.");
+        }
+
+        [HttpPut("room/update")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public IActionResult UpdateRoom([FromBody] DormAPI.DTOs.RoomUpdateDTO roomDto)
+        {
+            if (roomDto == null || roomDto.roomId <= 0 || roomDto.roomNumber == string.Empty || roomDto.floorId <= 0 || roomDto.capacity <= 0 )
+            {
+                return BadRequest("Invalid room data.");
+            }
+
+            var roomToUpdate = new Room
+            {
+                roomId = roomDto.roomId,
+                roomNumber = roomDto.roomNumber,
+                floorId = roomDto.floorId,
+                capacity = roomDto.capacity,
+                roomStatusId = roomDto.roomStatusId
+                
+            };
+
+            bool isUpdated = _clsExternalLayerRepo.UpdateRoom(roomToUpdate);
+            if (isUpdated) return Ok("Room updated successfully.");
+            return StatusCode(500, "An error occurred while updating the room.");
+        }
+
+        [HttpDelete("room/delete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public IActionResult DeleteRoom([FromBody] DormAPI.DTOs.RoomDeleteDTO roomDto)
+        {
+            if (roomDto == null || roomDto.roomId <= 0 || roomDto.floorId <= 0)
+            {
+                return BadRequest("Invalid room identifier.");
+            }
+
+            var roomToDelete = new Room
+            {
+                roomId = roomDto.roomId,
+                floorId = roomDto.floorId
+            };
+
+            bool isDeleted = _clsExternalLayerRepo.DeleteRoom(roomToDelete);
+            if (isDeleted) return Ok("Room deleted successfully.");
+            return StatusCode(500, "An error occurred while deleting the room.");
+        }
+
+        
+
+    }
+}

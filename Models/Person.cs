@@ -1,0 +1,19 @@
+namespace DormAPI.Models
+{
+    public class Person
+    {
+        public int personId { get; set; }
+        public String FirstName { get; set; }
+        public string? SecondName { get; set; }
+        public string? ThirdName { get; set; }
+        public string LastName { get; set; }
+        public DateTime DateOfBirth { get; set; }
+        public bool Gender { get; set; }
+        public string PassportNumber { get; set; }
+        public string IdentityNumber { get; set; }
+        public int? NationalityID { get; set; }
+        public string Nationality { get; set; }
+        public int ContactID { get; set; }
+        public Contact? Contact { get; set; }
+    }
+}

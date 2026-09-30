@@ -1,0 +1,6 @@
+﻿namespace DormAPI.Models
+{
+    public class Student
+    {
+    }
+}
