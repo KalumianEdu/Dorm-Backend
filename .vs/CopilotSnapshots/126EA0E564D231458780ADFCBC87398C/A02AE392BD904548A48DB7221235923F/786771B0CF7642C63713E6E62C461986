@@ -1,9 +1,0 @@
-﻿namespace DormAPI.DTOs
-{
-    public class UpdateFloorDTO
-    {
-        public int floorId { get; set; }
-        public int floorNumber { get; set; }
-        public int buildingId { get; set; }
-    }
-}

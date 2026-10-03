@@ -11,15 +11,12 @@ namespace DormAPI.Controllers
     public class EmployeeController : ControllerBase
     {
         private readonly EmployeeRepository _repository;
-        private readonly DormContext _dormDbContext;
+        private readonly AppDbContext _dormDbContext;
 
-        public EmployeeController(EmployeeRepository repository, DormContext context
-            )
+        public EmployeeController(EmployeeRepository repository, AppDbContext context)
         {
             _repository = repository;
             _dormDbContext = context;
-
-           
         }
 
         [HttpGet("get/all/employees")]
@@ -133,33 +130,71 @@ namespace DormAPI.Controllers
         [HttpGet("total/employee")]
         public async Task<ActionResult> GetTotalEmployee()
         {
-            var employeeDb = _dormDbContext.ViewEmployees;
-
-
-
-
-            // You need the actual Employee AND the actual Person in EF memory to edit them
-            var employees = _dormDbContext.Employees
-                .Include(e => e.Person);
-               
-
-
-            Console.WriteLine("====================================");
-            Console.WriteLine(employees.ToQueryString());
-            foreach(var employee in employees)
-            {
-                Console.WriteLine(employee.EmployeeId);
-                Console.WriteLine(employee.Person.FirstName);
-            }
-
-            
-
-
-
-
-            return Ok();
+            // Example: return total employees count
+            var total = await _dormDbContext.Employees.CountAsync();
+            return Ok(new { TotalEmployees = total });
         }
 
 
+        [HttpPut("update/contract")]
+        public async Task<ActionResult> UpdateEmployeeContract([FromBody] UpdateEmployeeContractDTO dto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                bool isSuccess = await _repository.UpdateEmployeeContractAsync(dto);
+                if (isSuccess)
+                {
+                    return Ok(new { message = "Employee contract updated successfully." });
+                }
+                return BadRequest("Failed to update employee contract.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("get/all/shifts")]
+        public async Task<ActionResult<List<ShiftDTO>>> GetShifts()
+        {
+            try
+            {
+                var response = await _repository.GetShiftsAsync();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        [HttpGet("get/leaves/{employeeId}")]
+        public async Task<IActionResult> GetEmployeeLeaves(int employeeId)
+        {
+            var leaves = await _repository.GetEmployeeLeavesAsync(employeeId);
+            return Ok(leaves);
+        }
+
+        [HttpPost("add/leave")]
+        public async Task<IActionResult> RequestLeave([FromBody] AddEmployeeLeaveDTO dto)
+        {
+            var leaveId = await _repository.AddEmployeeLeaveAsync(dto);
+            if (leaveId > 0)
+            {
+                return Ok(new { LeaveId = leaveId });
+            }
+            return BadRequest("Failed to add leave.");
+        }
+
+        [HttpGet("get/all/leavetypes")]
+        public async Task<IActionResult> GetLeaveTypes()
+        {
+            var types = await _repository.GetLeaveTypesAsync();
+            return Ok(types);
+        }
     }
 }

@@ -10,11 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 // 1. Read connection string and register DbContext with DI container 
-builder.Services.AddDbContext<DormContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-    .LogTo(Console.WriteLine, LogLevel.Information)
-    .EnableSensitiveDataLogging()
-);
+//builder.Services.AddDbContext<AppDbContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+//    .LogTo(Console.WriteLine, LogLevel.Information)
+//    .EnableSensitiveDataLogging()
+//);
 
 
 

@@ -217,7 +217,8 @@ namespace DormAPI.Database.Ado.Repositories
                                     Thursday = reader["Thursday"] != DBNull.Value && Convert.ToBoolean(reader["Thursday"]),
                                     Friday = reader["Friday"] != DBNull.Value && Convert.ToBoolean(reader["Friday"]),
                                     Saturday = reader["Saturday"] != DBNull.Value && Convert.ToBoolean(reader["Saturday"]),
-                                    Sunday = reader["Sunday"] != DBNull.Value && Convert.ToBoolean(reader["Sunday"])
+                                    Sunday = reader["Sunday"] != DBNull.Value && Convert.ToBoolean(reader["Sunday"]),
+                                    AssignedBuildingId = reader["AssignedBuildingId"] != DBNull.Value ? Convert.ToInt32(reader["AssignedBuildingId"]) : 0
                                 };
                             }
                         }
@@ -262,5 +263,182 @@ namespace DormAPI.Database.Ado.Repositories
             }
         }
 
+        public async Task<bool> UpdateEmployeeContractAsync(UpdateEmployeeContractDTO dto)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_UpdateEmployeeContract", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@EmployeeContractId", dto.EmployeeContractId);
+                    command.Parameters.AddWithValue("@StartDate", dto.StartDate);
+                    command.Parameters.AddWithValue("@EndDate", dto.EndDate);
+                    command.Parameters.AddWithValue("@ShiftId", (object)dto.ShiftId ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@Salary", dto.Salary);
+                    command.Parameters.AddWithValue("@WorkingHours", (object)dto.WorkingHours ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@Monday", dto.Monday);
+                    command.Parameters.AddWithValue("@Tuesday", dto.Tuesday);
+                    command.Parameters.AddWithValue("@Wednesday", dto.Wednesday);
+                    command.Parameters.AddWithValue("@Thursday", dto.Thursday);
+                    command.Parameters.AddWithValue("@Friday", dto.Friday);
+                    command.Parameters.AddWithValue("@Saturday", dto.Saturday);
+                    command.Parameters.AddWithValue("@Sunday", dto.Sunday);
+                    command.Parameters.AddWithValue("@AssignedBuildingId", (object)dto.AssignedBuildingId ?? DBNull.Value);
+
+                    try
+                    {
+                        await connection.OpenAsync();
+                        int rowsAffected = await command.ExecuteNonQueryAsync();
+                        return rowsAffected > 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error in UpdateEmployeeContractAsync: {ex.Message}");
+                        return false;
+                    }
+                }
+            }
+        }
+
+        public async Task<List<ShiftDTO>> GetShiftsAsync()
+        {
+            var shifts = new List<ShiftDTO>();
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                using (SqlCommand command = new SqlCommand("Select * from shifts", connection))
+                {
+                    command.CommandType = CommandType.Text;
+
+                    try
+                    {
+                        await connection.OpenAsync();
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                shifts.Add(new ShiftDTO
+                                {
+                                    ShiftId = reader["ShiftId"] != DBNull.Value ? Convert.ToInt32(reader["ShiftId"]) : 0,
+                                    ShiftName = reader["ShiftName"]?.ToString() ?? "",
+                                    
+                                });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error in GetShiftsAsync: {ex.Message}");
+                    }
+                }
+            }
+            return shifts;
+        }
+        public async Task<List<EmployeeLeaveDTO>> GetEmployeeLeavesAsync(int employeeId)
+        {
+            var leaves = new List<EmployeeLeaveDTO>();
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                string query = "SELECT * FROM ViewEmployeeLeaves WHERE EmployeeId = @EmployeeId ORDER BY CreatedAt DESC";
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@EmployeeId", employeeId);
+                    try
+                    {
+                        await connection.OpenAsync();
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                leaves.Add(new EmployeeLeaveDTO
+                                {
+                                    LeaveId = Convert.ToInt32(reader["LeaveId"]),
+                                    EmployeeId = Convert.ToInt32(reader["EmployeeId"]),
+                                    EmployeeName = reader["EmployeeName"].ToString(),
+                                    LeaveTypeId = Convert.ToInt32(reader["LeaveTypeId"]),
+                                    LeaveTypeName = reader["LeaveTypeName"].ToString(),
+                                    StartDate = Convert.ToDateTime(reader["StartDate"]),
+                                    EndDate = Convert.ToDateTime(reader["EndDate"]),
+                                    Reason = reader["Reason"].ToString(),
+                                    StatusId = Convert.ToInt32(reader["StatusId"]),
+                                    StatusTypeName = reader["StatusTypeName"].ToString(),
+                                    CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
+                                });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error in GetEmployeeLeavesAsync: {ex.Message}");
+                    }
+                }
+            }
+            return leaves;
+        }
+
+        public async Task<int> AddEmployeeLeaveAsync(AddEmployeeLeaveDTO dto)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_AddEmployeeLeave", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@EmployeeId", dto.EmployeeId);
+                    command.Parameters.AddWithValue("@LeaveTypeId", dto.LeaveTypeId);
+                    command.Parameters.AddWithValue("@StartDate", dto.StartDate);
+                    command.Parameters.AddWithValue("@EndDate", dto.EndDate);
+                    command.Parameters.AddWithValue("@Reason", dto.Reason);
+                    
+                    SqlParameter outputParam = new SqlParameter("@Output", SqlDbType.Int)
+                    {
+                        Direction = ParameterDirection.Output
+                    };
+                    command.Parameters.Add(outputParam);
+
+                    try
+                    {
+                        await connection.OpenAsync();
+                        await command.ExecuteNonQueryAsync();
+                        return (int)outputParam.Value;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error in AddEmployeeLeaveAsync: {ex.Message}");
+                        return 0;
+                    }
+                }
+            }
+        }
+
+        public async Task<List<LeaveTypeDTO>> GetLeaveTypesAsync()
+        {
+            var leaveTypes = new List<LeaveTypeDTO>();
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                string query = "SELECT * FROM LeaveTypes";
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    try
+                    {
+                        await connection.OpenAsync();
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                leaveTypes.Add(new LeaveTypeDTO
+                                {
+                                    LeaveTypeID = Convert.ToInt32(reader["LeaveTypeID"]),
+                                    LeaveTypeName = reader["LeaveTypeName"].ToString()
+                                });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error in GetLeaveTypesAsync: {ex.Message}");
+                    }
+                }
+            }
+            return leaveTypes;
+        }
     }
 }

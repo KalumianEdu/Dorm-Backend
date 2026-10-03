@@ -86,6 +86,7 @@ namespace DormAPI.DTOs
         public bool Friday { get; set; }
         public bool Saturday { get; set; }
         public bool Sunday { get; set; }
+        public int? AssignedBuildingId { get; set; }
     }
 
     public class AddEmployeeContractDTO
@@ -99,4 +100,61 @@ namespace DormAPI.DTOs
         public int? WorkingDays { get; set; }
         public int? AssignedBuildingId { get; set; }
     }
+
+    public class UpdateEmployeeContractDTO
+    {
+        public int EmployeeContractId { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public int? ShiftId { get; set; }
+        public double Salary { get; set; }
+        public double? WorkingHours { get; set; }
+        public bool Monday { get; set; }
+        public bool Tuesday { get; set; }
+        public bool Wednesday { get; set; }
+        public bool Thursday { get; set; }
+        public bool Friday { get; set; }
+        public bool Saturday { get; set; }
+        public bool Sunday { get; set; }
+        public int? AssignedBuildingId { get; set; }
+    }
+
+    public class ShiftDTO
+    {
+        public int ShiftId { get; set; }
+        public string ShiftName { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; }
+    }
+
+    public class EmployeeLeaveDTO
+    {
+        public int LeaveId { get; set; }
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; }
+        public int LeaveTypeId { get; set; }
+        public string LeaveTypeName { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public string Reason { get; set; }
+        public int StatusId { get; set; }
+        public string StatusTypeName { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class AddEmployeeLeaveDTO
+    {
+        public int EmployeeId { get; set; }
+        public int LeaveTypeId { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public string Reason { get; set; }
+    }
+
+    public class LeaveTypeDTO
+    {
+        public int LeaveTypeID { get; set; }
+        public string LeaveTypeName { get; set; }
+    }
 }
+
